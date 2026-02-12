@@ -1,0 +1,9 @@
+torch>=2.6
+torchvision>=0.21
+numpy>=1.22,<2.4
+Pillow>=10.0
+requests>=2.28
+opencv-contrib-python>=4.8
+transformers>=4.36
+piexif>=1.1
+cairosvg>=2.5

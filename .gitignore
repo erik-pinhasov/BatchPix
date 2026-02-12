@@ -1,0 +1,44 @@
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# Build artifacts
+build/
+dist/
+*.spec
+installer_output/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.gemini/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Large external binaries (download separately — see README)
+ffmpeg.exe
+realesrgan/
+
+# User config (generated at runtime)
+.copyright_config.json
+term_mappings.json
+
+# Temp / logs
+*.tmp
+*.log
+
+# Test outputs
+output/
+test_output/
