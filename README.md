@@ -1,10 +1,6 @@
 # BatchPix
 
 A desktop application for batch processing images — enhance, resize, crop, convert, strip metadata, rename, and tag copyright in a single pipeline.
-```markdown
-The user interface was developed entirely using Google Antigravity with the Gemini 3 Pro model.
-```
-
 
 <div align="center">
 
@@ -12,9 +8,11 @@ The user interface was developed entirely using Google Antigravity with the Gemi
 ![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-<br/>
+```markdown
+The UI was created entirely using Google Antigravity with the Gemini 3 Pro model.
+```
 
-<img src="screenshot.png" alt="screenshot"/>
+<img src="screenshot.png" alt="screenshot" width="450"/>
 
 </div>
 
