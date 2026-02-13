@@ -2,10 +2,18 @@
 
 A desktop application for batch processing images — enhance, resize, crop, convert, strip metadata, rename, and tag copyright in a single pipeline.
 
+<div align="center">
+
 ![Python](https://img.shields.io/badge/Python-3.9+-blue)
 ![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/License-MIT-green)
-![screenshot](screenshot.png)
+
+<br/>
+<br/>
+
+<img src="screenshot.png" alt="screenshot" width="700"/>
+
+</div>
 
 ## Features
 

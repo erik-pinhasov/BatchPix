@@ -21,7 +21,6 @@ DisableProgramGroupPage=yes
 LicenseFile=LICENSE
 OutputDir=installer_output
 OutputBaseFilename=BatchPix_Setup
-; SetupIconFile=assets\icon.ico
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
@@ -42,9 +41,6 @@ Source: "dist\BatchPix\BatchPix.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Internal dependencies (PyInstaller bundle)
 Source: "dist\BatchPix\_internal\*"; DestDir: "{app}\_internal"; Flags: ignoreversion recursesubdirs createallsubdirs
-
-; Assets
-Source: "dist\BatchPix\assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; Real-ESRGAN (AI enhancement engine)
 Source: "dist\BatchPix\realesrgan\*"; DestDir: "{app}\realesrgan"; Flags: ignoreversion recursesubdirs createallsubdirs
