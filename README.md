@@ -5,8 +5,7 @@ A desktop application for batch processing images — enhance, resize, crop, con
 ![Python](https://img.shields.io/badge/Python-3.9+-blue)
 ![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey)
 ![License](https://img.shields.io/badge/License-MIT-green)
-
-<!-- ![screenshot](assets/screenshot.png) -->
+![screenshot](screenshot.png)
 
 ## Features
 
@@ -150,33 +149,6 @@ The installer registers the app in Windows Add/Remove Programs, creates Start Me
 
 ---
 
-## Project Structure
-
-```
-BatchPix/
-├── app/
-│   ├── app.py               # Main application window & UI orchestration
-│   ├── handlers.py           # Processing pipeline — connects UI to core modules
-│   └── ui/
-│       ├── theme.py          # Color palette, fonts, spacing tokens
-│       ├── widgets.py        # Reusable styled Tkinter widgets
-│       ├── cards.py          # Input, output, and actions panel cards
-│       └── logs_panel.py     # Expandable log sidebar
-├── core/
-│   ├── enhancer.py           # Real-ESRGAN wrapper (subprocess)
-│   ├── resizer.py            # Preset & custom dimension resizing
-│   ├── smart_crop.py         # Transparent/solid border detection & removal
-│   ├── metadata_stripper.py  # Lossless EXIF/GPS/PNG chunk removal
-│   ├── renamer.py            # BLIP captioning → SEO filename generation
-│   └── copyrights.py         # Lossless EXIF copyright/artist tagging
-├── assets/                   # App icon
-├── realesrgan/               # Real-ESRGAN portable binary (not in repo)
-├── main.py                   # Entry point
-├── build_exe.py              # PyInstaller + Inno Setup build script
-├── installer.iss             # Inno Setup installer configuration
-├── requirements.txt          # Python dependencies
-└── LICENSE
-```
 
 ## Dependencies
 

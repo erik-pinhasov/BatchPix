@@ -11,6 +11,7 @@ import zlib
 import piexif
 from PIL import Image
 import shutil
+from PIL import Image, PngImagePlugin
 
 
 class CopyrightTagger:
@@ -33,11 +34,47 @@ class CopyrightTagger:
         
         if copyright_text:
             exif_dict["0th"][piexif.ImageIFD.Copyright] = copyright_text.encode('utf-8')
+            # Add XPTitle/XPComment too? Maybe overkill but standard.
+            
         if artist_name:
             exif_dict["0th"][piexif.ImageIFD.Artist] = artist_name.encode('utf-8')
-        
+            # Windows XPAuthor (0x9c9d) - strict UTF-16LE without BOM, null terminated (2 bytes)
+            # piexif expects bytes for XP tags properly encoded.
+            # Convert string to utf-16le bytes.
+            xp_author = artist_name.encode('utf-16le') + b'\x00\x00'
+            exif_dict["0th"][0x9c9d] = xp_author
+
         return piexif.dump(exif_dict)
     
+    def _build_xmp_bytes(self, copyright_text, artist_name):
+        """Build minimal XMP packet with dc:creator and dc:rights."""
+        # Simple string formatting is safer than xml.etree for XMP specifics
+        xmp_template = (
+            '<x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="BatchPix">'
+            '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">'
+            '<rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/">'
+            '{creators}'
+            '{rights}'
+            '</rdf:Description>'
+            '</rdf:RDF>'
+            '</x:xmpmeta>'
+        )
+        
+        creators = ""
+        if artist_name:
+            creators = (
+                '<dc:creator><rdf:Seq><rdf:li>{0}</rdf:li></rdf:Seq></dc:creator>'
+            ).format(artist_name)
+            
+        rights = ""
+        if copyright_text:
+            rights = (
+                '<dc:rights><rdf:Alt><rdf:li xml:lang="x-default">{0}</rdf:li></rdf:Alt></dc:rights>'
+            ).format(copyright_text)
+            
+        data = xmp_template.format(creators=creators, rights=rights)
+        return data.encode('utf-8')
+
     def _tag_jpeg(self, input_path, output_path, exif_bytes):
         """Tag JPEG losslessly using piexif.insert (no re-encoding)."""
         if os.path.abspath(input_path) != os.path.abspath(output_path):
@@ -46,72 +83,53 @@ class CopyrightTagger:
         piexif.insert(exif_bytes, output_path)
         return True, "Tagged JPEG (lossless)"
     
-    def _tag_png(self, input_path, output_path, exif_bytes):
+    def _create_text_chunk(self, keyword, text):
+        """Create a tEXt chunk data (keyword + null + text). Encoded as Latin-1."""
+        # PNG tEXt supports Latin-1. 'utf-8' might work in some viewers but valid spec is Latin-1.
+        # We'll use 'ignore' to prevent crashes on unsupported chars.
+        k = keyword.encode('latin-1', 'ignore')
+        t = text.encode('latin-1', 'ignore')
+        data = k + b'\0' + t
+        return b'tEXt', data
+
+    def _tag_png(self, input_path, output_path, exif_bytes, copyright_text=None, artist_name=None):
         """
-        Tag PNG by inserting an eXIf chunk at binary level.
-        No image re-encoding — only chunk-level manipulation.
+        Tag PNG using Pillow's PngInfo for maximum compatibility.
         """
-        # eXIf chunk stores raw TIFF data without the 'Exif\x00\x00' prefix
-        # piexif.dump() includes that prefix, so strip it
-        if exif_bytes[:6] == b'Exif\x00\x00':
-            chunk_data = exif_bytes[6:]
-        else:
-            chunk_data = exif_bytes
-        same_file = os.path.abspath(input_path) == os.path.abspath(output_path)
-        temp_output = output_path + ".tmp" if same_file else output_path
-        
         try:
-            with open(input_path, 'rb') as f_in, open(temp_output, 'wb') as f_out:
-                # Validate and copy PNG signature
-                sig = f_in.read(8)
-                if sig != b'\x89PNG\r\n\x1a\n':
-                    return False, "Not a valid PNG"
-                f_out.write(sig)
+            with Image.open(input_path) as img:
+                metadata = PngImagePlugin.PngInfo()
                 
-                exif_written = False
+                # Add our tags to standard PNG text chunks
+                # Use multiple keys for maximum compatibility
+                if copyright_text:
+                    metadata.add_text("Copyright", copyright_text)
+                    metadata.add_text("Source", copyright_text)
                 
-                while True:
-                    header = f_in.read(8)
-                    if len(header) < 8:
-                        break
-                    
-                    length = struct.unpack('>I', header[:4])[0]
-                    chunk_type = header[4:8]
-                    cdata = f_in.read(length)
-                    chunk_crc = f_in.read(4)
-                    
-                    # Skip any existing eXIf chunk (we'll write our own)
-                    if chunk_type == b'eXIf':
-                        continue
-                    
-                    # Insert our eXIf chunk right before IDAT (after all header chunks)
-                    if chunk_type == b'IDAT' and not exif_written:
-                        self._write_chunk(f_out, b'eXIf', chunk_data)
-                        exif_written = True
-                    
-                    # Copy original chunk as-is
-                    f_out.write(header)
-                    f_out.write(cdata)
-                    f_out.write(chunk_crc)
-                    
-                    if chunk_type == b'IEND':
-                        break
+                if artist_name:
+                    metadata.add_text("Author", artist_name)
+                    metadata.add_text("Artist", artist_name) # Unofficial but common
+                    metadata.add_text("Description", f"By {artist_name}") # Windows sometimes shows this
+                    metadata.add_text("Software", "BatchPix")
                 
-                # If no IDAT was found (unlikely), insert before EOF
-                if not exif_written:
-                    self._write_chunk(f_out, b'eXIf', chunk_data)
-            
-            if same_file:
-                shutil.move(temp_output, output_path)
-            
-            return True, "Tagged PNG (lossless)"
+                # Add XMP packet (Standard for modern Windows Explorer)
+                xmp_data = self._build_xmp_bytes(copyright_text, artist_name)
+                # XML:com.adobe.xmp is the standard key for XMP in PNG iTXt
+                metadata.add_itxt("XML:com.adobe.xmp", xmp_data.decode('utf-8'))
+
+                # Save with metadata and EXIF
+                # Pillow's PNG writer puts 'exif' bytes directly into 'eXIf' chunk.
+                # The eXIf chunk expects raw TIFF data (II/MM...), but piexif.dump() adds 'Exif\x00\x00'.
+                # We MUST strip this header for PNGs, otherwise Windows ignores the chunk.
+                png_exif = exif_bytes
+                if png_exif.startswith(b'Exif\x00\x00'):
+                    png_exif = png_exif[6:]
+                
+                img.save(output_path, "png", pnginfo=metadata, exif=png_exif)
+                
+            return True, "Tagged PNG"
         
         except Exception as e:
-            if os.path.exists(temp_output) and same_file:
-                try:
-                    os.remove(temp_output)
-                except OSError:
-                    pass
             return False, f"PNG tag failed: {e}"
     
     def _write_chunk(self, f_out, chunk_type, chunk_data):
@@ -158,7 +176,7 @@ class CopyrightTagger:
             if ext in ('.jpg', '.jpeg'):
                 ok, msg = self._tag_jpeg(input_path, output_path, exif_bytes)
             elif ext == '.png':
-                ok, msg = self._tag_png(input_path, output_path, exif_bytes)
+                ok, msg = self._tag_png(input_path, output_path, exif_bytes, copyright_text, artist_name)
             elif ext in ('.webp', '.tiff', '.tif', '.avif'):
                 ok, msg = self._tag_webp(input_path, output_path, exif_bytes)
             else:

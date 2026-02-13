@@ -11,6 +11,7 @@
 AppId={{B4A7F3E2-8C1D-4F6A-9E2B-5D3C1A0F8E7B}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
+AppVerName={#MyAppName}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}/issues
@@ -20,7 +21,7 @@ DisableProgramGroupPage=yes
 LicenseFile=LICENSE
 OutputDir=installer_output
 OutputBaseFilename=BatchPix_Setup
-SetupIconFile=assets\icon.ico
+; SetupIconFile=assets\icon.ico
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern

@@ -4,7 +4,7 @@ BatchPix - Entry Point
 Batch process images for web optimization with:
 - AI Enhancement (Real-ESRGAN)
 - Smart Resize & Crop
-- WebP Conversion
+- Format Conversion (WebP, PNG, JPEG, BMP, TIFF)
 - Metadata Management
 - AI-powered Renaming
 - Copyright Tagging

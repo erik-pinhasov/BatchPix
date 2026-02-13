@@ -1,201 +1,200 @@
 """
-Custom widget factories for consistent styling.
+Custom widget factories using CustomTkinter for modern styling.
 """
 
-import tkinter as tk
-from tkinter import ttk
+import customtkinter as ctk
 from .theme import Theme
 
 
-def create_entry(parent, textvariable, width=25):
-    """Create a styled text entry field."""
-    return tk.Entry(
+def create_entry(parent, textvariable, width=200):
+    """Create a styled rounded entry field."""
+    return ctk.CTkEntry(
         parent,
         textvariable=textvariable,
         width=width,
         font=Theme.get_font('body'),
-        bg=Theme.get_color('input'),
-        fg=Theme.get_color('text'),
-        insertbackground='white',
-        relief='flat',
-        highlightthickness=2,
-        bd=0,
-        highlightbackground=Theme.get_color('input_border'),
-        highlightcolor=Theme.get_color('accent')
+        fg_color=Theme.get_color('input'),
+        text_color=Theme.get_color('text'),
+        border_color=Theme.get_color('input_border'),
+        border_width=1,
+        corner_radius=Theme.DIMENSIONS['corner_radius']
     )
 
 
 def create_button(parent, text, command, small=False):
-    """Create a styled button."""
+    """Create a styled rounded button."""
     if small:
         font = Theme.get_font('button')
-        padx, pady = Theme.PADDING['button']
+        height = 32
+        corner_radius = Theme.DIMENSIONS['btn_radius_small']
     else:
         font = Theme.get_font('button_large')
-        padx, pady = Theme.PADDING['button_large']
+        height = 40
+        corner_radius = Theme.DIMENSIONS['btn_radius']
     
-    return tk.Button(
+    return ctk.CTkButton(
         parent,
         text=text,
+        command=command,
         font=font,
-        bg=Theme.get_color('button'),
-        fg=Theme.get_color('text'),
-        relief='flat',
-        padx=padx,
-        pady=pady,
-        cursor='hand2',
-        bd=0,
-        activebackground=Theme.get_color('button_hover'),
-        command=command
+        fg_color=Theme.get_color('button'),
+        text_color=Theme.get_color('text'),
+        hover_color=Theme.get_color('button_hover'),
+        corner_radius=corner_radius,
+        height=height,
+        cursor='hand2'
     )
 
 
 def create_accent_button(parent, text, command):
-    """Create a prominent accent-colored button."""
-    return tk.Button(
+    """Create a prominent accent-colored rounded button (START)."""
+    return ctk.CTkButton(
         parent,
         text=text,
+        command=command,
         font=Theme.get_font('button_large'),
-        bg=Theme.get_color('accent'),
-        fg=Theme.get_color('text'),
-        relief='flat',
-        pady=12,
-        cursor='hand2',
-        bd=0,
-        activebackground=Theme.get_color('accent_hover'),
-        command=command
+        fg_color=Theme.get_color('accent'),
+        text_color='white',
+        hover_color=Theme.get_color('accent_hover'),
+        corner_radius=Theme.DIMENSIONS['btn_radius'],
+        height=50,  # Taller for main action
+        cursor='hand2'
     )
 
 
-def create_spinbox(parent, variable, from_=0, to=100, width=5):
-    """Create a custom spinbox with visible increment/decrement buttons."""
-    frame = tk.Frame(parent, bg=Theme.get_color('card'))
+def create_spinbox(parent, variable, from_=0, to=100, width=60):
+    """Create a modern spinbox (Entry + Buttons)."""
+    # CTk doesn't have a native Spinbox, so we build one.
+    frame = ctk.CTkFrame(parent, fg_color="transparent")
     
-    entry = tk.Entry(
+    entry = ctk.CTkEntry(
         frame,
         textvariable=variable,
         width=width,
+        height=24,  # Compact height
         font=Theme.get_font('body'),
-        bg=Theme.get_color('input'),
-        fg=Theme.get_color('text'),
-        insertbackground='white',
-        relief='flat',
+        fg_color=Theme.get_color('input'),
+        text_color=Theme.get_color('text'),
+        border_color=Theme.get_color('input_border'),
         justify='center',
-        bd=0,
-        highlightthickness=1,
-        highlightbackground=Theme.get_color('input_border')
+        corner_radius=Theme.DIMENSIONS['corner_radius']
     )
-    entry.pack(side='left')
+    entry.pack(side='left', padx=(0, 3))
     
-    btn_frame = tk.Frame(frame, bg=Theme.get_color('input'))
-    btn_frame.pack(side='left', fill='y')
-    
+    # Helper to validate input
+    def validate(val):
+        try:
+            return from_ <= int(val) <= to
+        except:
+            return False
+
     def increment():
         try:
-            val = variable.get()
+            val = int(variable.get())
             if val < to:
                 variable.set(val + 1)
-        except (tk.TclError, ValueError):
-            pass
-    
+        except:
+            variable.set(from_)
+
     def decrement():
         try:
-            val = variable.get()
+            val = int(variable.get())
             if val > from_:
                 variable.set(val - 1)
-        except (tk.TclError, ValueError):
-            pass
+        except:
+            variable.set(from_)
+            
+    # Buttons container
+    btn_frame = ctk.CTkFrame(frame, fg_color="transparent")
+    btn_frame.pack(side='left')
     
-    tk.Button(
-        btn_frame, text="▲", font=('Segoe UI', 6),
-        bg=Theme.get_color('button'), fg='white',
-        relief='flat', bd=0, padx=3, pady=0,
-        command=increment
-    ).pack(fill='x')
+    # Mini buttons
+    # We use small height buttons
+    btn_up = ctk.CTkButton(
+        btn_frame, text="▲", width=20, height=12,
+        font=('Arial', 6),
+        fg_color=Theme.get_color('button'),
+        hover_color=Theme.get_color('button_hover'),
+        command=increment,
+        corner_radius=3
+    )
+    btn_up.pack(pady=(0, 0)) # No gap
     
-    tk.Button(
-        btn_frame, text="▼", font=('Segoe UI', 6),
-        bg=Theme.get_color('button'), fg='white',
-        relief='flat', bd=0, padx=3, pady=0,
-        command=decrement
-    ).pack(fill='x')
+    btn_down = ctk.CTkButton(
+        btn_frame, text="▼", width=20, height=12,
+        font=('Arial', 6),
+        fg_color=Theme.get_color('button'),
+        hover_color=Theme.get_color('button_hover'),
+        command=decrement,
+        corner_radius=3
+    )
+    btn_down.pack()
     
     return frame
 
 
-def create_combobox(parent, variable, values, width=10):
-    """Create a styled combobox."""
-    style = ttk.Style()
-    style.theme_use('clam')
-    style.configure(
-        'Modern.TCombobox',
-        fieldbackground=Theme.get_color('input'),
-        background=Theme.get_color('input'),
-        foreground='white',
-        arrowcolor='white',
-        bordercolor=Theme.get_color('input_border'),
-        selectbackground=Theme.get_color('accent'),
-        selectforeground='white',
-        padding=6
-    )
-    style.map(
-        'Modern.TCombobox',
-        fieldbackground=[('readonly', Theme.get_color('input'))],
-        background=[('readonly', Theme.get_color('input'))],
-        foreground=[('readonly', 'white')]
-    )
-    
-    return ttk.Combobox(
+def create_combobox(parent, variable, values, width=150):
+    """Create a modern rounded combobox."""
+    return ctk.CTkComboBox(
         parent,
-        textvariable=variable,
+        variable=variable,
         values=values,
-        state="readonly",
         width=width,
-        font=Theme.get_font('small'),
-        style='Modern.TCombobox'
+        font=Theme.get_font('body'),
+        fg_color=Theme.get_color('input'),
+        text_color=Theme.get_color('text'),
+        border_color=Theme.get_color('input_border'),
+        button_color=Theme.get_color('button'),
+        button_hover_color=Theme.get_color('button_hover'),
+        dropdown_fg_color=Theme.get_color('card'),
+        dropdown_text_color=Theme.get_color('text'),
+        dropdown_hover_color=Theme.get_color('button'),
+        corner_radius=Theme.DIMENSIONS['corner_radius'],
+        state="readonly" 
     )
 
 
 def create_checkbox(parent, text, variable, bold=False):
-    """Create a styled checkbox."""
+    """Create a modern rounded checkbox."""
     font = Theme.get_font('body')
     if bold:
         font = (font[0], font[1], 'bold')
     
-    return tk.Checkbutton(
+    return ctk.CTkCheckBox(
         parent,
         text=text,
         variable=variable,
         font=font,
-        bg=Theme.get_color('card'),
-        fg=Theme.get_color('text'),
-        selectcolor=Theme.get_color('input'),
-        activebackground=Theme.get_color('card')
+        fg_color=Theme.get_color('accent'),
+        hover_color=Theme.get_color('accent_hover'),
+        text_color=Theme.get_color('text'),
+        border_color=Theme.get_color('input_border'),
+        corner_radius=4,
+        border_width=2
     )
 
 
 def create_label(parent, text, dim=False):
     """Create a styled label."""
-    return tk.Label(
+    return ctk.CTkLabel(
         parent,
         text=text,
         font=Theme.get_font('small'),
-        bg=Theme.get_color('card'),
-        fg=Theme.get_color('text_dim') if dim else Theme.get_color('text')
+        text_color=Theme.get_color('text_dim') if dim else Theme.get_color('text')
     )
 
 
 def create_radiobutton(parent, text, variable, value, command=None):
-    """Create a styled radiobutton."""
-    return tk.Radiobutton(
+    """Create a modern radiobutton."""
+    return ctk.CTkRadioButton(
         parent,
         text=text,
         variable=variable,
         value=value,
         font=Theme.get_font('body'),
-        bg=Theme.get_color('card'),
-        fg=Theme.get_color('text'),
-        selectcolor=Theme.get_color('input'),
-        activebackground=Theme.get_color('card'),
+        fg_color=Theme.get_color('accent'),
+        hover_color=Theme.get_color('accent_hover'),
+        text_color=Theme.get_color('text'),
         command=command
     )
+
