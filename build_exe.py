@@ -30,34 +30,6 @@ def main():
     except ImportError:
         print("Installing PyInstaller...")
         subprocess.check_call([sys.executable, "-m", "pip", "install", "pyinstaller"])
-        
-    # Ensure icon.ico exists from icon.png with High Quality
-    # Ensure icon.ico exists from icon.png with High Quality
-    # if os.path.exists("assets/icon.png"):
-    #     try:
-    #         from PIL import Image
-    #         src = Image.open("assets/icon.png")
-    #         
-    #         # Standard Windows icon sizes
-    #         icon_sizes = [(256, 256), (128, 128), (64, 64), (48, 48), (32, 32), (16, 16)]
-    #         images = []
-    #         
-    #         for size in icon_sizes:
-    #             # Use LANCZOS for high-quality downsampling
-    #             resampled = src.resize(size, Image.Resampling.LANCZOS)
-    #             images.append(resampled)
-    #         
-    #         # Save as ICO with all sizes
-    #         # The first image is the primary one, others are appended
-    #         images[0].save(
-    #             "assets/icon.ico", 
-    #             format='ICO', 
-    #             append_images=images[1:],
-    #             optimize=True
-    #         )
-    #         print("✓ Generated high-quality assets/icon.ico")
-    #     except Exception as e:
-    #         print(f"⚠ Icon conversion failed: {e}")
 
     # Build command (onedir for easier distribution with assets)
     cmd = [
@@ -67,11 +39,6 @@ def main():
         "--clean",
         "--name", "BatchPix",
     ]
-    
-    # Icon
-    if os.path.exists("assets/icon.ico"):
-        cmd.extend(["--icon", "assets/icon.ico"])
-        print("✓ Using icon: assets/icon.ico")
     
     # Add hidden imports for lazy-loaded modules
     cmd.extend([
@@ -96,14 +63,6 @@ def main():
     
     # Copy required folders to dist
     dist_dir = os.path.join("dist", "BatchPix")
-    
-    # Copy assets folder
-    if os.path.exists("assets"):
-        dst = os.path.join(dist_dir, "assets")
-        if os.path.exists(dst):
-            shutil.rmtree(dst)
-        shutil.copytree("assets", dst)
-        print("✓ Copied assets/")
     
     # Copy realesrgan folder
     if os.path.exists("realesrgan"):

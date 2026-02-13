@@ -2,13 +2,13 @@
 ; Compile with Inno Setup 6: https://jrsoftware.org/isinfo.php
 
 #define MyAppName "BatchPix"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.1.0"
 #define MyAppPublisher "E.P."
 #define MyAppURL "https://github.com/erik-pinhasov/BatchPix"
 #define MyAppExeName "BatchPix.exe"
 
 [Setup]
-AppId={{B4A7F3E2-8C1D-4F6A-9E2B-5D3C1A0F8E7B}
+AppId={{B4A7F3E2-8C1D-4F6A-9E2B-5D3C1A0F8E7B}}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppVerName={#MyAppName}
