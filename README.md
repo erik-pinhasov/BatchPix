@@ -11,7 +11,7 @@ A desktop application for batch processing images — enhance, resize, crop, con
 <br/>
 <br/>
 
-<img src="screenshot.png" alt="screenshot" width="700"/>
+<img src="screenshot.png" alt="screenshot"/>
 
 </div>
 
