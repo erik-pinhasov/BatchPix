@@ -12,6 +12,16 @@ Batch process images for web optimization with:
 Author: E.P.
 """
 
+import ctypes
+try:
+    # Per-Monitor DPI awareness — must be set before any window is created
+    ctypes.windll.shcore.SetProcessDpiAwareness(2)
+except Exception:
+    try:
+        ctypes.windll.user32.SetProcessDPIAware()
+    except Exception:
+        pass
+
 from app.app import App
 
 

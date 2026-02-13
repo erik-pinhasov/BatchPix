@@ -277,8 +277,8 @@ class ActionsCard(Card):
         
         # Option B: Custom W/H
         self.custom_size_frame = ctk.CTkFrame(self.resize_options_frame, fg_color="transparent")
-        self.width_var = ctk.IntVar(value=1200)
-        self.height_var = ctk.IntVar(value=1200)
+        self.width_var = ctk.StringVar(value="1200")
+        self.height_var = ctk.StringVar(value="1200")
         create_label(self.custom_size_frame, "W:").pack(side='left')
         create_spinbox(self.custom_size_frame, self.width_var, 100, 8000, 70).pack(side='left', padx=5)
         create_label(self.custom_size_frame, "H:").pack(side='left', padx=(10, 0))
@@ -366,6 +366,14 @@ class ActionsCard(Card):
         except:
             pass
     
+    @staticmethod
+    def _safe_int(var, default):
+        """Safely get an int from a StringVar, returning default if empty/invalid."""
+        try:
+            return int(var.get())
+        except (ValueError, Exception):
+            return default
+
     def get_options(self):
         """Get all action options as a dictionary."""
         holder = self.copyright_text_var.get().strip()
@@ -377,8 +385,8 @@ class ActionsCard(Card):
             'model': self.model_var.get(),
             'resize': self.var_resize.get(),
             'preset': self.preset_var.get(),
-            'width': self.width_var.get(),
-            'height': self.height_var.get(),
+            'width': self._safe_int(self.width_var, 1200),
+            'height': self._safe_int(self.height_var, 1200),
             'aspect': self.aspect_var.get(),
             'crop': self.var_crop.get(),
             'convert': self.var_convert.get(),

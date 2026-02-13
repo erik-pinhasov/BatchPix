@@ -11,7 +11,7 @@ class Theme:
     COLORS = {
         'bg': ("#ffffff", "#0f0f15"),
         'card': ("#f3f4f6", "#1a1a24"),
-        'accent': ("#8b5cf6", "#8b5cf6"),     # Violet
+        'accent': ("#437196", "#437196"),     # Violet
         'accent_hover': ("#7c3aed", "#7c3aed"),
         'text': ("#1f2937", "#ffffff"),
         'text_dim': ("#6b7280", "#9ca3af"),

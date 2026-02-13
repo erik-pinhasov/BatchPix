@@ -1,19 +1,25 @@
-# BatchPix
-
-A desktop application for batch processing images — enhance, resize, crop, convert, strip metadata, rename, and tag copyright in a single pipeline.
-
 <div align="center">
+  <img src="app/assets/icon.png" alt="BatchPix Logo" width="180"/>
 
-![Python](https://img.shields.io/badge/Python-3.9+-blue)
-![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey)
-![License](https://img.shields.io/badge/License-MIT-green)
+  <h1>BatchPix</h1>
 
-```markdown
-The UI was created entirely using Google Antigravity with the Gemini 3 Pro model.
-```
+  <p>
+    A desktop application for batch processing images — enhance, resize, crop, convert, strip metadata, rename, and tag copyright in a single pipeline.
+  </p>
 
-<img src="screenshot.png" alt="screenshot" width="450"/>
+  <p>
+    <img src="https://img.shields.io/badge/Python-3.9+-blue" alt="Python" />
+    <img src="https://img.shields.io/badge/Platform-Windows-lightgrey" alt="Platform" />
+    <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
+  </p>
 
+  <blockquote>
+    The UI was created entirely using Google Antigravity with the Gemini 3 Pro model.
+  </blockquote>
+
+  <br />
+
+  <img src="app/assets/screenshot.png" alt="screenshot" width="450"/>
 </div>
 
 ## Features

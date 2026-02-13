@@ -45,7 +45,7 @@ class LoadingScreen(ctk.CTkToplevel):
         self.status_label = ctk.CTkLabel(
             self, text="Loading...",
             font=('Segoe UI', 13),
-            fg_color='#0f0f15', text_color='#8b5cf6'
+            fg_color='#0f0f15', text_color='#437196'
         )
         self.status_label.pack()
         
@@ -67,6 +67,15 @@ class App(ctk.CTk):
     
     def __init__(self):
         super().__init__()
+        
+        # Set AppUserModelID early for proper taskbar icon on Windows
+        try:
+            import ctypes
+            myappid = 'batchpix.app.1.0'
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+        except Exception:
+            pass
+        
         self.withdraw()
         
         # Setup CustomTkinter
@@ -77,8 +86,24 @@ class App(ctk.CTk):
         self.title("BatchPix")
         self.resizable(False, False)
         
+        # Set window icon
+        assets_dir = os.path.join(get_base_path(), 'app', 'assets')
+        self._icon_path = os.path.join(assets_dir, 'icon.ico')
+        try:
+            if os.path.exists(self._icon_path):
+                self.iconbitmap(self._icon_path)
+                # ADDED: Also set as PhotoImage for better DPI handling
+                self.iconphoto(True, tk.PhotoImage(file=self._icon_path))
+        except Exception:
+            pass
+        
         # Show loading screen
         self.loading = LoadingScreen(self)
+        try:
+            if os.path.exists(self._icon_path):
+                self.loading.iconbitmap(self._icon_path)
+        except Exception:
+            pass
         self.loading.update()
         
         # Initialize after a brief delay
@@ -86,14 +111,9 @@ class App(ctk.CTk):
     
     def _initialize(self):
         """Initialize the application."""
-        # Set AppUserModelID for proper taskbar icon handling on Windows
-        try:
-            import ctypes
-            myappid = 'batchpix.app.1.0'  # unique ID
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-        except Exception:
-            pass
-
+        # Set Win32 icons now that window is ready
+        self._set_win32_icon()
+        
         self.loading.update_status("Loading modules...")
         
         # State
@@ -113,10 +133,46 @@ class App(ctk.CTk):
         x = 50  # Left side
         y = (self.winfo_screenheight() - target_height) // 2
         self.geometry(f"{target_width}x{target_height}+{x}+{y}")
-        
+
         # Show window
         self.loading.destroy()
         self.deiconify()
+    
+    def _set_win32_icon(self):
+        """Use Win32 API to set crisp icons for both titlebar and taskbar."""
+        try:
+            import ctypes
+            from ctypes import wintypes
+            
+            user32 = ctypes.windll.user32
+            
+            # Constants
+            WM_SETICON = 0x0080
+            ICON_SMALL = 0  # 16x16 (title bar)
+            ICON_BIG = 1    # 32x32 (taskbar, Alt+Tab)
+            IMAGE_ICON = 1
+            LR_LOADFROMFILE = 0x0010
+            
+            icon_path = self._icon_path
+            
+            # Get the Win32 window handle
+            hwnd = user32.GetParent(self.winfo_id())
+            
+            # Load icon at 32x32 for taskbar
+            hicon_big = user32.LoadImageW(
+                0, icon_path, IMAGE_ICON, 32, 32, LR_LOADFROMFILE
+            )
+            # Load icon at 16x16 for title bar
+            hicon_small = user32.LoadImageW(
+                0, icon_path, IMAGE_ICON, 16, 16, LR_LOADFROMFILE
+            )
+            
+            if hicon_big:
+                user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon_big)
+            if hicon_small:
+                user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon_small)
+        except Exception:
+            pass
     
     def _build_ui(self):
         """Build the main UI."""
