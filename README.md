@@ -147,9 +147,6 @@ Output: `installer_output/BatchPix_Setup.exe`
 
 The installer registers the app in Windows Add/Remove Programs, creates Start Menu shortcuts, and optionally adds a desktop shortcut.
 
----
-
-
 ## Dependencies
 
 | Package | Version | Purpose |
