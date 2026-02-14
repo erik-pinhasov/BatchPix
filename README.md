@@ -4,7 +4,7 @@
   <h1>BatchPix</h1>
 
   <p>
-    A desktop application for batch processing images — enhance, resize, crop, convert, strip metadata, rename, and tag copyright in a single pipeline.
+    A desktop application for batch processing images - enhance, resize, crop, convert, strip metadata, rename, and tag copyright in a single pipeline.
   </p>
 
   <p>
@@ -27,7 +27,7 @@
 | Feature | Description |
 |---------|-------------|
 | **AI Enhancement** | Upscale images 2×/4× using Real-ESRGAN neural network |
-| **Smart Resize** | Set target width or height — aspect ratio is always preserved |
+| **Smart Resize** | Set target width or height - aspect ratio is always preserved |
 | **Smart Crop** | Automatically detect and remove empty, transparent, or solid-color borders |
 | **WebP Conversion** | Convert to WebP format for significantly smaller file sizes |
 | **Metadata Strip** | Remove GPS coordinates, EXIF tags, and camera data for privacy |
@@ -47,7 +47,7 @@
 ### Option 1: Windows Installer (Recommended)
 
 Download `BatchPix_Setup.exe` from the [Releases](../../releases) page and run it.  
-No Python, dependencies, or configuration required — everything is bundled into the installer.
+No Python, dependencies, or configuration required - everything is bundled into the installer.
 
 ### Option 2: Run from Source
 
@@ -75,7 +75,7 @@ python main.py
 | Dependency | Required For | How to Get |
 |-----------|-------------|------------|
 | [Real-ESRGAN portable](https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0) | AI Enhancement only | Download the Windows binary and extract into a `realesrgan/` folder in the project root |
-| [GTK3 Runtime](https://github.com/nickvdp/gtk3-win/releases) | SVG support only | Required by CairoSVG on Windows — install if processing SVG files |
+| [GTK3 Runtime](https://github.com/nickvdp/gtk3-win/releases) | SVG support only | Required by CairoSVG on Windows - install if processing SVG files |
 
 > **Note:** FFmpeg is **not** required. All image processing uses Pillow and native binaries.
 
@@ -83,11 +83,11 @@ python main.py
 
 ## Usage
 
-1. **Select Input** — Choose a folder or pick individual files
-2. **Set Output** — Specify where processed images should be saved
-3. **Choose Actions** — Check the processing steps you want to apply
-4. **Configure** — Adjust settings for each action (resize dimension & size, enhancement model, etc.)
-5. **Click Start** — The pipeline runs, and progress is shown in the log panel
+1. **Select Input** - Choose a folder or pick individual files
+2. **Set Output** - Specify where processed images should be saved
+3. **Choose Actions** - Check the processing steps you want to apply
+4. **Configure** - Adjust settings for each action (resize dimension & size, enhancement model, etc.)
+5. **Click Start** - The pipeline runs, and progress is shown in the log panel
 
 ### Processing Pipeline
 
@@ -103,17 +103,17 @@ Each step receives the output of the previous step. For example, if you select E
 
 ## AI Models
 
-### BLIP — Image Captioning (AI Rename)
+### BLIP - Image Captioning (AI Rename)
 
 - **Model:** [`Salesforce/blip-image-captioning-base`](https://huggingface.co/Salesforce/blip-image-captioning-base)
 - **Purpose:** Generates natural-language descriptions of images, which are then cleaned into SEO-friendly filenames
 - **Size:** ~990 MB (downloaded automatically on first use)
 - **Runs on:** CPU (no GPU required)
 
-### Real-ESRGAN — Image Upscaling (AI Enhancement)
+### Real-ESRGAN - Image Upscaling (AI Enhancement)
 
 - **Models:** [`realesrgan-x4plus`](https://github.com/xinntao/Real-ESRGAN) (quality), [`realesrgan-x4plus-anime`](https://github.com/xinntao/Real-ESRGAN) (fast/anime)
-- **Purpose:** Neural network super-resolution — upscales images 2× or 4× while preserving detail
+- **Purpose:** Neural network super-resolution - upscales images 2× or 4× while preserving detail
 - **Runs via:** Vulkan GPU compute (the portable binary handles this automatically)
 
 ---
@@ -133,7 +133,7 @@ The AI renamer replaces generic terms detected by BLIP with domain-specific name
 }
 ```
 
-If no `term_mappings.json` exists, no term replacements are applied. The renamer still generates clean filenames from BLIP captions — the mappings just let you customize vocabulary.
+If no `term_mappings.json` exists, no term replacements are applied. The renamer still generates clean filenames from BLIP captions - the mappings just let you customize vocabulary.
 
 ### Copyright Settings
 
@@ -155,7 +155,7 @@ This uses [PyInstaller](https://pyinstaller.org/) to bundle Python, all pip depe
 
 Install [Inno Setup 6](https://jrsoftware.org/isdl.php) (free), then either:
 
-- Run `python build_exe.py` again — it auto-detects Inno Setup and compiles the installer
+- Run `python build_exe.py` again - it auto-detects Inno Setup and compiles the installer
 - Or open `installer.iss` in Inno Setup and press **Compile** (F9)
 
 Output: `installer_output/BatchPix_Setup.exe`
@@ -166,9 +166,9 @@ The installer registers the app in Windows Add/Remove Programs, creates Start Me
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| `torch` | ≥ 2.6 | PyTorch — tensor computation for BLIP model |
+| `torch` | ≥ 2.6 | PyTorch - tensor computation for BLIP model |
 | `torchvision` | ≥ 0.21 | Image transforms for BLIP preprocessing |
-| `transformers` | ≥ 4.36 | Hugging Face — loads BLIP model |
+| `transformers` | ≥ 4.36 | Hugging Face - loads BLIP model |
 | `Pillow` | ≥ 10.0 | Core image I/O, resize, crop, format conversion |
 | `piexif` | ≥ 1.1 | Lossless EXIF read/write for copyright tagging |
 | `opencv-contrib-python` | ≥ 4.8 | Smart crop border detection |
@@ -178,7 +178,7 @@ The installer registers the app in Windows Add/Remove Programs, creates Start Me
 
 ## License
 
-MIT License — see [LICENSE](LICENSE)
+MIT License - see [LICENSE](LICENSE)
 
 
 
