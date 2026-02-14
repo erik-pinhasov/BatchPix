@@ -27,7 +27,7 @@
 | Feature | Description |
 |---------|-------------|
 | **AI Enhancement** | Upscale images 2×/4× using Real-ESRGAN neural network |
-| **Smart Resize** | Presets: thumbnail, small, medium, large, HD, 4K, or custom dimensions |
+| **Smart Resize** | Set target width or height — aspect ratio is always preserved |
 | **Smart Crop** | Automatically detect and remove empty, transparent, or solid-color borders |
 | **WebP Conversion** | Convert to WebP format for significantly smaller file sizes |
 | **Metadata Strip** | Remove GPS coordinates, EXIF tags, and camera data for privacy |
@@ -86,7 +86,7 @@ python main.py
 1. **Select Input** — Choose a folder or pick individual files
 2. **Set Output** — Specify where processed images should be saved
 3. **Choose Actions** — Check the processing steps you want to apply
-4. **Configure** — Adjust settings for each action (resize preset, enhancement model, etc.)
+4. **Configure** — Adjust settings for each action (resize dimension & size, enhancement model, etc.)
 5. **Click Start** — The pipeline runs, and progress is shown in the log panel
 
 ### Processing Pipeline
@@ -179,3 +179,42 @@ The installer registers the app in Windows Add/Remove Programs, creates Start Me
 ## License
 
 MIT License — see [LICENSE](LICENSE)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -129,10 +129,7 @@ class OutputCard(Card):
         create_button(row, "Browse", callbacks.get('browse_output'), small=True).pack(side='left')
 
 
-RESIZE_DESCRIPTIONS = {
-    "thumbnail": "150px", "small": "480px", "medium": "800px",
-    "large": "1200px", "hd": "1920px", "4k": "3840px", "custom": "Custom"
-}
+
 
 
 class TermMapDialog(ctk.CTkToplevel):
@@ -259,33 +256,11 @@ class ActionsCard(Card):
         row = ctk.CTkFrame(self.inner, fg_color="transparent")
         row.pack(fill='x', pady=2)
         create_checkbox(row, "Resize", self.var_resize).pack(side='left')
-        self.preset_var = ctk.StringVar(value="large")
-        combo = create_combobox(row, self.preset_var, list(RESIZE_DESCRIPTIONS.keys()), width=110)
-        combo.pack(side='left', padx=10)
-        combo.configure(command=self._on_resize_change)
-        
-        # Dynamic Options Frame (Inline)
-        self.resize_options_frame = ctk.CTkFrame(row, fg_color="transparent")
-        self.resize_options_frame.pack(side='left')
-        
-        # Option A: Preset Info + Aspect Ratio
-        self.preset_info_frame = ctk.CTkFrame(self.resize_options_frame, fg_color="transparent")
-        self.resize_label = create_label(self.preset_info_frame, "1200px", dim=True)
-        self.resize_label.pack(side='left')
-        self.aspect_var = ctk.BooleanVar(value=True)
-        create_checkbox(self.preset_info_frame, "Aspect ratio", self.aspect_var).pack(side='left', padx=15)
-        
-        # Option B: Custom W/H
-        self.custom_size_frame = ctk.CTkFrame(self.resize_options_frame, fg_color="transparent")
-        self.width_var = ctk.StringVar(value="1200")
-        self.height_var = ctk.StringVar(value="1200")
-        create_label(self.custom_size_frame, "W:").pack(side='left')
-        create_spinbox(self.custom_size_frame, self.width_var, 100, 8000, 70).pack(side='left', padx=5)
-        create_label(self.custom_size_frame, "H:").pack(side='left', padx=(10, 0))
-        create_spinbox(self.custom_size_frame, self.height_var, 100, 8000, 70).pack(side='left', padx=5)
-        
-        # Initial State
-        self.preset_info_frame.pack(side='left', fill='both')
+        self.resize_dim_var = ctk.StringVar(value="Width")
+        create_combobox(row, self.resize_dim_var, ["Width", "Height"], width=90).pack(side='left', padx=10)
+        self.custom_size_var = ctk.StringVar(value="1200")
+        create_spinbox(row, self.custom_size_var, 100, 8000, 80).pack(side='left')
+        create_label(row, "px  (aspect ratio kept)", dim=True).pack(side='left', padx=(5, 0))
 
         # 3. Smart Crop
         row = ctk.CTkFrame(self.inner, fg_color="transparent")
@@ -325,16 +300,7 @@ class ActionsCard(Card):
         create_entry(row, self.copyright_text_var, 200).pack(side='left', padx=10)
         create_label(row, "(Holder Name)", dim=True).pack(side='left')
         
-    def _on_resize_change(self, choice=None):
-        """Handle resize preset change."""
-        preset = self.preset_var.get()
-        if preset == "custom":
-            self.preset_info_frame.pack_forget()
-            self.custom_size_frame.pack(side='left', fill='both', padx=(5, 0))
-        else:
-            self.custom_size_frame.pack_forget()
-            self.preset_info_frame.pack(side='left', fill='both')
-            self.resize_label.configure(text=RESIZE_DESCRIPTIONS.get(preset, ""))
+
 
     def _select_all(self):
         for var in self.action_vars:
@@ -384,10 +350,8 @@ class ActionsCard(Card):
             'enhance': self.var_enhance.get(),
             'model': self.model_var.get(),
             'resize': self.var_resize.get(),
-            'preset': self.preset_var.get(),
-            'width': self._safe_int(self.width_var, 1200),
-            'height': self._safe_int(self.height_var, 1200),
-            'aspect': self.aspect_var.get(),
+            'custom_size': self._safe_int(self.custom_size_var, 1200),
+            'resize_dimension': self.resize_dim_var.get().lower(),  # 'width' or 'height'
             'crop': self.var_crop.get(),
             'convert': self.var_convert.get(),
             'convert_format': self.format_var.get().upper(),

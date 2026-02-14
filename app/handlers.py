@@ -151,11 +151,14 @@ class ProcessingHandler:
             if options.get('resize'):
                 if self._cancelled(): return
                 self.app.log("=== RESIZE ===")
-                custom = max(options['width'], options['height']) if options['preset'] == 'custom' else None
                 for i, path in enumerate(working):
                     if self._cancelled(): return
                     self.app.log(f"[{i+1}/{total}] {os.path.basename(path)}")
-                    ok, msg = self.resizer.process_file(path, path, preset=options['preset'], custom_size=custom)
+                    ok, msg = self.resizer.process_file(
+                        path, path,
+                        target_size=options['custom_size'],
+                        dimension=options['resize_dimension']
+                    )
                     self.app.log("  ✓ Resized" if ok else f"  ✗ {msg}")
             
             # 3. Smart Crop
