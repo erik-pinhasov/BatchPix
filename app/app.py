@@ -213,7 +213,10 @@ class App(ctk.CTk):
     
     def _build_actions_card(self):
         """Build actions selection card."""
-        self.actions_card = ActionsCard(self.main_frame, {})
+        callbacks = {
+            'on_mode_change': self._on_actions_mode_change,
+        }
+        self.actions_card = ActionsCard(self.main_frame, callbacks)
     
     def _build_start_button(self):
         """Build the start processing button."""
@@ -363,6 +366,14 @@ class App(ctk.CTk):
         """Stop the current processing."""
         self.handler.cancel()
     
+    def _on_actions_mode_change(self, mode):
+        """Handle actions card mode change (batch vs 360°)."""
+        if not self.is_processing and hasattr(self, 'start_btn'):
+            if mode == "spin360":
+                self.start_btn.configure(text="▶  GENERATE 360° VIEW")
+            else:
+                self.start_btn.configure(text="▶  START BATCH")
+    
     def _set_processing_state(self, processing):
         """Update UI based on processing state."""
         self.is_processing = processing
@@ -372,8 +383,10 @@ class App(ctk.CTk):
                 hover_color='#dc2626'
             )
         else:
+            mode = self.actions_card.mode_var.get()
+            label = "▶  GENERATE 360° VIEW" if mode == "spin360" else "▶  START BATCH"
             self.start_btn.configure(
-                text="▶  START BATCH", fg_color=Theme.get_color('accent'),
+                text=label, fg_color=Theme.get_color('accent'),
                 hover_color=Theme.get_color('accent_hover')
             )
     

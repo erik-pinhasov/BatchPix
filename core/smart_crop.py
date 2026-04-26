@@ -67,8 +67,8 @@ class SmartCropper:
                     cropped.save(output_path, 'JPEG', quality=85, optimize=True, **save_kwargs)
                     
                 elif ext == '.webp':
-                    # Use 85 quality + method 6 (best compression)
-                    cropped.save(output_path, 'WEBP', quality=85, method=6, **save_kwargs)
+                    # quality=80, method=6 (best compression), alpha_quality=85, exact=False (discard invisible RGB)
+                    cropped.save(output_path, 'WEBP', quality=80, method=6, alpha_quality=85, exact=False, **save_kwargs)
                     
                 elif ext == '.png':
                     # Optimize PNG (P-mode preserved automatically if cropped.mode == 'P')

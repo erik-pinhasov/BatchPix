@@ -47,7 +47,7 @@ class Theme:
     # Window settings
     WINDOW = {
         'min_width': 520,  # ~10% narrower
-        'min_height': 785,
+        'min_height': 855,
         'logs_width': 450,
     }
     

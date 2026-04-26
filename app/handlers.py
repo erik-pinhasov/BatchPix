@@ -6,6 +6,29 @@ import os
 import shutil
 import threading
 
+def _save_png(img, path):
+    """
+    Save a PIL image as PNG using imagequant (lossy palette reduction, same engine
+    as pngquant) when available. Falls back to Pillow's lossless optimize if not.
+    imagequant typically produces 60-80% smaller files than Pillow alone.
+    Install: pip install imagequant
+    """
+    try:
+        import imagequant
+        # imagequant requires RGBA mode
+        src = img.convert('RGBA') if img.mode != 'RGBA' else img
+        quantized = imagequant.quantize_pil_image(
+            src,
+            dithering_level=1.0,
+            max_colors=256,
+            min_quality=65,
+            max_quality=85,
+        )
+        quantized.save(path, format='PNG')
+    except ImportError:
+        img.save(path, format='PNG', optimize=True)
+
+
 IMAGE_EXTENSIONS = {
     '.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif', '.webp', '.gif',
     '.ico', '.avif', '.svg', '.tga',
@@ -13,9 +36,9 @@ IMAGE_EXTENSIONS = {
 
 # Format-specific save parameters
 FORMAT_SAVE_PARAMS = {
-    'WEBP':  {'format': 'WEBP', 'quality': 95},
+    'WEBP':  {'format': 'WEBP', 'quality': 82, 'method': 6, 'alpha_quality': 80, 'exact': False, 'lossless': False},
     'PNG':   {'format': 'PNG', 'optimize': True},
-    'JPEG':  {'format': 'JPEG', 'quality': 95, 'optimize': True},
+    'JPEG':  {'format': 'JPEG', 'quality': 82, 'optimize': True},
     'BMP':   {'format': 'BMP'},
     'TIFF':  {'format': 'TIFF'},
 }
@@ -43,13 +66,18 @@ class ProcessingHandler:
         from core.metadata_stripper import MetadataStripper
         from core.smart_crop import SmartCropper
         from core.copyrights import CopyrightTagger
-        
+        from core.bg_fill import BgFiller
+        from core.canvas_fit import CanvasFitter
+
         self.enhancer = ImageEnhancer(self.app.log)
         self.resizer = ImageResizer(self.app.log)
         self.stripper = MetadataStripper(self.app.log)
         self.cropper = SmartCropper(self.app.log)
         self.copyright_tagger = CopyrightTagger(self.app.log)
+        self.bg_filler = BgFiller(self.app.log)
+        self.canvas_fitter = CanvasFitter(self.app.log)
         self.renamer = None  # Lazy loaded due to heavy dependencies
+        self.spin360 = None  # Lazy loaded due to heavy dependencies (rembg)
     
     def process(self, files, output_dir, options):
         """Process images in a background thread."""
@@ -147,21 +175,7 @@ class ProcessingHandler:
                     else:
                         self.app.log(f"  ✗ {msg}")
             
-            # 2. Resize
-            if options.get('resize'):
-                if self._cancelled(): return
-                self.app.log("=== RESIZE ===")
-                for i, path in enumerate(working):
-                    if self._cancelled(): return
-                    self.app.log(f"[{i+1}/{total}] {os.path.basename(path)}")
-                    ok, msg = self.resizer.process_file(
-                        path, path,
-                        target_size=options['custom_size'],
-                        dimension=options['resize_dimension']
-                    )
-                    self.app.log("  ✓ Resized" if ok else f"  ✗ {msg}")
-            
-            # 3. Smart Crop
+            # 2. Smart Crop (run before resize so we resize the trimmed content)
             if options.get('crop'):
                 if self._cancelled(): return
                 self.app.log("=== CROP ===")
@@ -170,7 +184,57 @@ class ProcessingHandler:
                     self.app.log(f"[{i+1}/{total}] {os.path.basename(path)}")
                     ok, msg = self.cropper.process_file(path, path)
                     self.app.log("  ✓ Cropped" if ok else f"  ✗ {msg}")
-            
+
+            # 3. Resize
+            if options.get('resize'):
+                if self._cancelled(): return
+                self.app.log("=== RESIZE ===")
+                # When a convert step follows, save as lossless PNG intermediate
+                # to avoid double lossy encode (e.g. JPEG→resize at q=85→convert to WebP at q=82).
+                use_lossless_intermediate = options.get('convert', False)
+                new_working = []
+                for i, path in enumerate(working):
+                    if self._cancelled(): return
+                    self.app.log(f"[{i+1}/{total}] {os.path.basename(path)}")
+                    ok, msg, out_path = self.resizer.process_file(
+                        path, path,
+                        target_size=options['custom_size'],
+                        dimension=options['resize_dimension'],
+                        lossless_intermediate=use_lossless_intermediate,
+                    )
+                    self.app.log("  ✓ Resized" if ok else f"  ✗ {msg}")
+                    new_working.append(out_path if ok else path)
+                working = new_working
+
+            # 3.25. Fit to Canvas
+            if options.get('canvas_fit'):
+                if self._cancelled(): return
+                self.app.log("=== FIT TO CANVAS ===")
+                for i, path in enumerate(working):
+                    if self._cancelled(): return
+                    self.app.log(f"[{i+1}/{total}] {os.path.basename(path)}")
+                    ok, msg = self.canvas_fitter.process_file(
+                        path, path,
+                        canvas_size=options.get('canvas_size', 200),
+                        padding=options.get('canvas_padding', 8),
+                    )
+                    self.app.log(f"  ✓ {msg}" if ok else f"  ✗ {msg}")
+
+            # 3.5. Add Background
+            if options.get('bg'):
+                if self._cancelled(): return
+                self.app.log("=== ADD BACKGROUND ===")
+                for i, path in enumerate(working):
+                    if self._cancelled(): return
+                    self.app.log(f"[{i+1}/{total}] {os.path.basename(path)}")
+                    ok, msg = self.bg_filler.process_file(
+                        path, path,
+                        bg_type=options.get('bg_type', 'color'),
+                        bg_color=options.get('bg_color', '#ffffff'),
+                        bg_image_path=options.get('bg_image', ''),
+                    )
+                    self.app.log(f"  ✓ {msg}" if ok else f"  ✗ {msg}")
+
             # 4. Convert Format
             target_fmt = options.get('convert_format', 'WEBP')
             target_ext = FORMAT_EXTENSIONS.get(target_fmt, '.webp')
@@ -191,8 +255,11 @@ class ProcessingHandler:
                             elif img.mode in ('RGBA', 'LA', 'PA', 'P'):
                                 img = img.convert('RGBA')
                             new_path = os.path.splitext(path)[0] + target_ext
-                            save_params = FORMAT_SAVE_PARAMS.get(target_fmt, {})
-                            img.save(new_path, **save_params)
+                            if target_fmt == 'PNG':
+                                _save_png(img, new_path)
+                            else:
+                                save_params = FORMAT_SAVE_PARAMS.get(target_fmt, {})
+                                img.save(new_path, **save_params)
                             img.close()
                             os.remove(path)
                             new_working.append(new_path)
@@ -201,8 +268,24 @@ class ProcessingHandler:
                             new_working.append(path)
                             self.app.log(f"  ✗ {e}")
                     else:
-                        new_working.append(path)
-                        self.app.log(f"  - Already {target_fmt}")
+                        # Same format: re-encode in-place to apply current save params
+                        try:
+                            img = Image.open(path)
+                            if target_fmt == 'JPEG' and img.mode in ('RGBA', 'LA', 'PA', 'P'):
+                                img = img.convert('RGB')
+                            elif img.mode in ('RGBA', 'LA', 'PA', 'P'):
+                                img = img.convert('RGBA')
+                            if target_fmt == 'PNG':
+                                _save_png(img, path)
+                            else:
+                                save_params = FORMAT_SAVE_PARAMS.get(target_fmt, {})
+                                img.save(path, **save_params)
+                            img.close()
+                            new_working.append(path)
+                            self.app.log(f"  ✓ Re-compressed {target_fmt}")
+                        except Exception as e:
+                            new_working.append(path)
+                            self.app.log(f"  ✗ {e}")
                 working = new_working
             
             # 5. Strip Metadata
@@ -249,6 +332,27 @@ class ProcessingHandler:
                         path, path, options['copyright_text'], options['artist']
                     )
                     self.app.log(f"  ✓ {msg}" if ok else f"  ✗ {msg}")
+            
+            # 8. 360° Spin View
+            if options.get('spin360'):
+                if self._cancelled(): return
+                self.app.log("=== 360° SPIN VIEW ===")
+                if self.spin360 is None:
+                    self.app.log("Loading background removal model...")
+                    from core.spin360 import Spin360Generator
+                    self.spin360 = Spin360Generator(self.app.log)
+                
+                ok, msg = self.spin360.generate(
+                    image_paths=working,
+                    output_dir=output_dir,
+                    frame_size=options.get('spin360_frame_size', 512),
+                    remove_bg=options.get('spin360_rembg', True),
+                    cancel_event=self._cancel_event,
+                )
+                if ok:
+                    self.app.log(f"  ✓ {msg}")
+                else:
+                    self.app.log(f"  ✗ {msg}")
             
             if self._cancelled(): return
             self.app.log(f"\n✓ DONE! {total} files saved to {output_dir}")

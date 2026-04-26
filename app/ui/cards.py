@@ -7,7 +7,7 @@ import json
 import os
 import sys
 import customtkinter as ctk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, colorchooser
 from .theme import Theme
 from .widgets import (
     create_entry, create_button, create_checkbox, create_label,
@@ -205,55 +205,108 @@ class TermMapDialog(ctk.CTkToplevel):
 
 
 class ActionsCard(Card):
-    """Actions selection card with all processing options."""
+    """Actions card with mode toggle: Batch Process or 360° Spin View."""
     
     def __init__(self, parent, callbacks):
-        super().__init__(parent, "⚡ ACTIONS")
+        super().__init__(parent)
         
         self.callbacks = callbacks
         self._config_path = os.path.join(_get_base_path(), '.copyright_config.json')
         self._saved_config = self._load_config()
-        self._build_controls()
-        self._build_separator()
-        self._build_actions()
-    
-    def _build_controls(self):
-        """Build select/deselect all buttons."""
-        row = ctk.CTkFrame(self.inner, fg_color="transparent")
-        row.pack(fill='x', pady=(0, 10))
         
+        self.mode_var = ctk.StringVar(value="batch")
+        
+        self._build_mode_toggle()
+        self._build_batch_panel()
+        self._build_spin360_panel()
+        self._on_mode_change()
+    
+    def _build_mode_toggle(self):
+        """Build the mode selector at the top of the card."""
+        self.mode_frame = ctk.CTkFrame(self.inner, fg_color="transparent")
+        self.mode_frame.pack(fill='x', pady=(0, 10))
+        
+        self.mode_toggle = ctk.CTkSegmentedButton(
+            self.mode_frame,
+            values=["⚡ Batch Process", "🔄 360° Spin View"],
+            command=self._on_mode_toggle,
+            font=Theme.get_font('body'),
+            selected_color=Theme.get_color('accent'),
+            selected_hover_color=Theme.get_color('accent_hover'),
+            unselected_color=Theme.get_color('input'),
+            unselected_hover_color=Theme.get_color('input_border'),
+            text_color="white",
+            corner_radius=8,
+            height=36,
+        )
+        self.mode_toggle.set("⚡ Batch Process")
+        self.mode_toggle.pack(fill='x')
+    
+    def _on_mode_toggle(self, value):
+        """Handle segmented button toggle."""
+        self.mode_var.set("batch" if "Batch" in value else "spin360")
+        self._on_mode_change()
+    
+    def _on_mode_change(self):
+        """Show/hide panels based on mode."""
+        if self.mode_var.get() == "batch":
+            self.spin360_frame.pack_forget()
+            self.batch_frame.pack(fill='x', after=self.mode_frame)
+        else:
+            self.batch_frame.pack_forget()
+            self.spin360_frame.pack(fill='x', after=self.mode_frame)
+        
+        # Notify parent (app.py) so it can update the START button text
+        on_mode = self.callbacks.get('on_mode_change')
+        if on_mode:
+            on_mode(self.mode_var.get())
+    
+    def _build_batch_panel(self):
+        """Build the batch processing actions panel."""
+        self.batch_frame = ctk.CTkFrame(self.inner, fg_color="transparent")
+        
+        # Select/Deselect All
+        row = ctk.CTkFrame(self.batch_frame, fg_color="transparent")
+        row.pack(fill='x', pady=(0, 10))
         create_button(row, "Select All", self._select_all, small=True).pack(side='left')
         create_button(row, "Deselect All", self._deselect_all, small=True).pack(side='left', padx=10)
-    
-    def _build_separator(self):
-        ctk.CTkFrame(self.inner, height=1, fg_color=Theme.get_color('border')).pack(fill='x', pady=10)
-    
-    def _build_actions(self):
-        """Build all action checkboxes with options."""
+        
+        # Separator
+        ctk.CTkFrame(self.batch_frame, height=1, fg_color=Theme.get_color('border')).pack(fill='x', pady=10)
+        
         # Action variables (all checked by default)
         self.var_enhance = ctk.BooleanVar(value=True)
-        self.var_resize = ctk.BooleanVar(value=True)
         self.var_crop = ctk.BooleanVar(value=True)
+        self.var_resize = ctk.BooleanVar(value=True)
+        self.var_canvas_fit = ctk.BooleanVar(value=False)
+        self.var_bg = ctk.BooleanVar(value=False)
         self.var_convert = ctk.BooleanVar(value=True)
         self.var_strip = ctk.BooleanVar(value=True)
         self.var_rename = ctk.BooleanVar(value=True)
         self.var_copyright = ctk.BooleanVar(value=True)
-        
+
         self.action_vars = [
-            self.var_enhance, self.var_resize, self.var_crop, self.var_convert,
-            self.var_strip, self.var_rename, self.var_copyright
+            self.var_enhance, self.var_crop, self.var_resize, self.var_canvas_fit,
+            self.var_bg, self.var_convert, self.var_strip, self.var_rename,
+            self.var_copyright,
         ]
-        
+
         # 1. Enhance
-        row = ctk.CTkFrame(self.inner, fg_color="transparent")
+        row = ctk.CTkFrame(self.batch_frame, fg_color="transparent")
         row.pack(fill='x', pady=2)
         create_checkbox(row, "Enhance", self.var_enhance).pack(side='left')
         self.model_var = ctk.StringVar(value="x4-quality")
         create_combobox(row, self.model_var, ["x4-quality", "x4-fast", "x2-quality"], width=110).pack(side='left', padx=10)
         create_label(row, "AI upscale", dim=True).pack(side='left')
-        
-        # 2. Resize
-        row = ctk.CTkFrame(self.inner, fg_color="transparent")
+
+        # 2. Smart Crop (runs before resize so we adjust size on the trimmed content)
+        row = ctk.CTkFrame(self.batch_frame, fg_color="transparent")
+        row.pack(fill='x', pady=2)
+        create_checkbox(row, "Smart Crop", self.var_crop).pack(side='left')
+        create_label(row, "Remove empty borders", dim=True).pack(side='left', padx=10)
+
+        # 3. Resize
+        row = ctk.CTkFrame(self.batch_frame, fg_color="transparent")
         row.pack(fill='x', pady=2)
         create_checkbox(row, "Resize", self.var_resize).pack(side='left')
         self.resize_dim_var = ctk.StringVar(value="Width")
@@ -262,45 +315,203 @@ class ActionsCard(Card):
         create_spinbox(row, self.custom_size_var, 100, 8000, 80).pack(side='left')
         create_label(row, "px  (aspect ratio kept)", dim=True).pack(side='left', padx=(5, 0))
 
-        # 3. Smart Crop
-        row = ctk.CTkFrame(self.inner, fg_color="transparent")
+        # 3.25. Fit to Canvas (square canvas + even padding, content centred)
+        row = ctk.CTkFrame(self.batch_frame, fg_color="transparent")
         row.pack(fill='x', pady=2)
-        create_checkbox(row, "Smart Crop", self.var_crop).pack(side='left')
-        create_label(row, "Remove empty borders", dim=True).pack(side='left', padx=10)
-        
+        create_checkbox(row, "Fit to Canvas", self.var_canvas_fit).pack(side='left')
+        self.canvas_size_var = ctk.StringVar(value="200")
+        create_spinbox(row, self.canvas_size_var, 16, 8000, 80).pack(side='left', padx=(10, 4))
+        create_label(row, "px  Padding", dim=True).pack(side='left')
+        self.canvas_padding_var = ctk.StringVar(value="8")
+        create_spinbox(row, self.canvas_padding_var, 0, 2000, 70).pack(side='left', padx=(4, 4))
+        create_label(row, "px", dim=True).pack(side='left')
+
+        # 3.5. Add Background
+        self._build_bg_row()
+
         # 4. Convert Format
-        row = ctk.CTkFrame(self.inner, fg_color="transparent")
+        row = ctk.CTkFrame(self.batch_frame, fg_color="transparent")
         row.pack(fill='x', pady=2)
         create_checkbox(row, "Convert Format", self.var_convert).pack(side='left')
         self.format_var = ctk.StringVar(value="WebP")
         create_combobox(row, self.format_var, CONVERT_FORMATS).pack(side='left', padx=10)
         
         # 5. Strip Metadata
-        row = ctk.CTkFrame(self.inner, fg_color="transparent")
+        row = ctk.CTkFrame(self.batch_frame, fg_color="transparent")
         row.pack(fill='x', pady=2)
         create_checkbox(row, "Strip Metadata", self.var_strip).pack(side='left')
         create_label(row, "Remove GPS & camera info", dim=True).pack(side='left', padx=10)
         
         # 6. AI Rename
-        row = ctk.CTkFrame(self.inner, fg_color="transparent")
+        row = ctk.CTkFrame(self.batch_frame, fg_color="transparent")
         row.pack(fill='x', pady=2)
         create_checkbox(row, "AI Rename", self.var_rename).pack(side='left')
         create_label(row, "SEO-friendly filenames", dim=True).pack(side='left', padx=10)
         create_button(row, "Edit Map", self._open_term_map, small=True).pack(side='left', padx=10)
         
         # 7. Copyright
-        row = ctk.CTkFrame(self.inner, fg_color="transparent")
+        row = ctk.CTkFrame(self.batch_frame, fg_color="transparent")
         row.pack(fill='x', pady=2)
         create_checkbox(row, "Copyright", self.var_copyright).pack(side='left')
         
-        # Consolidated Copyright Input
         self.copyright_text_var = ctk.StringVar(value=self._saved_config.get('copyright_holder', 'Your Name'))
         self.copyright_text_var.trace_add('write', lambda *_: self._save_config())
         
         create_entry(row, self.copyright_text_var, 200).pack(side='left', padx=10)
         create_label(row, "(Holder Name)", dim=True).pack(side='left')
-        
+    
+    def _build_bg_row(self):
+        """Build the Add Background row with color/image sub-controls."""
+        # Persistent container — always packed in batch_frame, holds all bg widgets
+        bg_container = ctk.CTkFrame(self.batch_frame, fg_color="transparent")
+        bg_container.pack(fill='x', pady=2)
 
+        # -- Main row: checkbox + radio buttons --
+        top_row = ctk.CTkFrame(bg_container, fg_color="transparent")
+        top_row.pack(fill='x')
+
+        create_checkbox(top_row, "Add Background", self.var_bg).pack(side='left')
+
+        self.bg_type_var = ctk.StringVar(value="color")
+
+        ctk.CTkRadioButton(
+            top_row, text="Color",
+            variable=self.bg_type_var, value="color",
+            font=Theme.get_font('small'),
+            fg_color=Theme.get_color('accent'),
+            hover_color=Theme.get_color('accent_hover'),
+            text_color=Theme.get_color('text'),
+            command=self._on_bg_type_change,
+        ).pack(side='left', padx=(12, 6))
+
+        ctk.CTkRadioButton(
+            top_row, text="Image",
+            variable=self.bg_type_var, value="image",
+            font=Theme.get_font('small'),
+            fg_color=Theme.get_color('accent'),
+            hover_color=Theme.get_color('accent_hover'),
+            text_color=Theme.get_color('text'),
+            command=self._on_bg_type_change,
+        ).pack(side='left', padx=(0, 6))
+
+        # -- Color sub-row (inside container) --
+        self.bg_color_row = ctk.CTkFrame(bg_container, fg_color="transparent")
+
+        self.bg_color_var = ctk.StringVar(value="#ffffff")
+        self.bg_swatch = ctk.CTkButton(
+            self.bg_color_row,
+            text="",
+            width=28, height=28,
+            fg_color="#ffffff",
+            hover_color="#ffffff",
+            border_width=1,
+            border_color=Theme.get_color('input_border'),
+            corner_radius=6,
+            command=self._pick_color,
+            cursor='hand2',
+        )
+        self.bg_swatch.pack(side='left', padx=(0, 8))
+
+        self.bg_hex_entry = create_entry(self.bg_color_row, self.bg_color_var, width=100)
+        self.bg_hex_entry.pack(side='left')
+        create_label(self.bg_color_row, "hex color", dim=True).pack(side='left', padx=(6, 0))
+        self.bg_color_var.trace_add('write', self._on_hex_typed)
+
+        # -- Image sub-row (inside container) --
+        self.bg_image_row = ctk.CTkFrame(bg_container, fg_color="transparent")
+
+        self.bg_image_var = ctk.StringVar()
+        create_entry(self.bg_image_row, self.bg_image_var, width=260).pack(side='left', fill='x', expand=True)
+        create_button(
+            self.bg_image_row, "Browse",
+            lambda: self._browse_bg_image(), small=True
+        ).pack(side='left', padx=(8, 0))
+
+        # Default: show color sub-row
+        self._on_bg_type_change()
+
+    def _on_bg_type_change(self):
+        """Show the relevant sub-row based on the selected background type."""
+        if self.bg_type_var.get() == "color":
+            self.bg_image_row.pack_forget()
+            self.bg_color_row.pack(fill='x', padx=(28, 0), pady=(2, 0))
+        else:
+            self.bg_color_row.pack_forget()
+            self.bg_image_row.pack(fill='x', padx=(28, 0), pady=(2, 0))
+
+    def _pick_color(self):
+        """Open the system color picker and update swatch + hex entry."""
+        initial = self.bg_color_var.get() or "#ffffff"
+        result = colorchooser.askcolor(color=initial, title="Choose Background Color")
+        if result and result[1]:
+            hex_color = result[1]  # e.g. '#ff0000'
+            self.bg_color_var.set(hex_color)
+            self._update_swatch(hex_color)
+
+    def _on_hex_typed(self, *_):
+        """Update swatch when a valid hex is typed into the entry."""
+        val = self.bg_color_var.get().strip()
+        if not val.startswith('#'):
+            val = '#' + val
+        # Only update if the hex is valid (3 or 6 chars after #)
+        stripped = val.lstrip('#')
+        if len(stripped) in (3, 6) and all(c in '0123456789abcdefABCDEF' for c in stripped):
+            self._update_swatch(val)
+
+    def _update_swatch(self, hex_color: str):
+        """Set the swatch fg_color to reflect the chosen color."""
+        try:
+            self.bg_swatch.configure(fg_color=hex_color, hover_color=hex_color)
+        except Exception:
+            pass
+
+    def _browse_bg_image(self):
+        """Open file dialog to choose a background image."""
+        path = filedialog.askopenfilename(
+            title="Select Background Image",
+            filetypes=[("Images", "*.jpg *.jpeg *.png *.webp *.bmp *.tiff *.tif")]
+        )
+        if path:
+            self.bg_image_var.set(path)
+
+    def _build_spin360_panel(self):
+        """Build the 360° Spin View settings panel."""
+        self.spin360_frame = ctk.CTkFrame(self.inner, fg_color="transparent")
+        
+        # Description
+        desc = ctk.CTkLabel(
+            self.spin360_frame,
+            text="Generate interactive 360° product views from multi-angle photos",
+            font=Theme.get_font('small'),
+            text_color=Theme.get_color('text_dim'),
+        )
+        desc.pack(anchor='w', pady=(0, 15))
+        
+        # Frame size
+        row = ctk.CTkFrame(self.spin360_frame, fg_color="transparent")
+        row.pack(fill='x', pady=5)
+        create_label(row, "Frame Size:").pack(side='left')
+        self.spin360_frame_size_var = ctk.StringVar(value="512")
+        create_spinbox(row, self.spin360_frame_size_var, 128, 2048, 80).pack(side='left', padx=10)
+        create_label(row, "px  (each frame is resized to this square)", dim=True).pack(side='left')
+        
+        # Remove background
+        row = ctk.CTkFrame(self.spin360_frame, fg_color="transparent")
+        row.pack(fill='x', pady=5)
+        self.var_spin360_rembg = ctk.BooleanVar(value=True)
+        create_checkbox(row, "Remove Background", self.var_spin360_rembg).pack(side='left')
+        create_label(row, "AI-powered (uses rembg)", dim=True).pack(side='left', padx=10)
+        
+        # Info note
+        info = ctk.CTkLabel(
+            self.spin360_frame,
+            text="💡 Tip: Name your images in order (01.jpg, 02.jpg, ...) for correct rotation sequence.",
+            font=Theme.get_font('small'),
+            text_color=Theme.get_color('accent'),
+            wraplength=450,
+            justify='left',
+        )
+        info.pack(anchor='w', pady=(15, 0))
 
     def _select_all(self):
         for var in self.action_vars:
@@ -346,20 +557,35 @@ class ActionsCard(Card):
         from datetime import datetime
         year = datetime.now().year
         
+        is_spin360 = self.mode_var.get() == "spin360"
+        
+        # Normalise hex (ensure it starts with #)
+        raw_hex = self.bg_color_var.get().strip()
+        bg_hex = raw_hex if raw_hex.startswith('#') else f'#{raw_hex}'
+
         return {
-            'enhance': self.var_enhance.get(),
+            'mode': self.mode_var.get(),
+            'enhance': False if is_spin360 else self.var_enhance.get(),
             'model': self.model_var.get(),
-            'resize': self.var_resize.get(),
+            'resize': False if is_spin360 else self.var_resize.get(),
             'custom_size': self._safe_int(self.custom_size_var, 1200),
-            'resize_dimension': self.resize_dim_var.get().lower(),  # 'width' or 'height'
-            'crop': self.var_crop.get(),
-            'convert': self.var_convert.get(),
+            'resize_dimension': self.resize_dim_var.get().lower(),
+            'crop': False if is_spin360 else self.var_crop.get(),
+            'canvas_fit': False if is_spin360 else self.var_canvas_fit.get(),
+            'canvas_size': self._safe_int(self.canvas_size_var, 200),
+            'canvas_padding': self._safe_int(self.canvas_padding_var, 8),
+            'bg': False if is_spin360 else self.var_bg.get(),
+            'bg_type': self.bg_type_var.get(),
+            'bg_color': bg_hex,
+            'bg_image': self.bg_image_var.get(),
+            'convert': False if is_spin360 else self.var_convert.get(),
             'convert_format': self.format_var.get().upper(),
-            'strip': self.var_strip.get(),
-            'rename': self.var_rename.get(),
-            'copyright': self.var_copyright.get(),
+            'strip': False if is_spin360 else self.var_strip.get(),
+            'rename': False if is_spin360 else self.var_rename.get(),
+            'copyright': False if is_spin360 else self.var_copyright.get(),
             'copyright_text': f"© {year} {holder}" if holder else "",
             'artist': holder,
+            'spin360': is_spin360,
+            'spin360_frame_size': self._safe_int(self.spin360_frame_size_var, 512),
+            'spin360_rembg': self.var_spin360_rembg.get(),
         }
-
-
