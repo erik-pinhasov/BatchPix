@@ -163,15 +163,34 @@ class ProcessingHandler:
             if options.get('enhance'):
                 if self._cancelled(): return
                 self.app.log("=== ENHANCE ===")
+                keep_size = options.get('enhance_keep_size', False)
                 for i, path in enumerate(working):
                     if self._cancelled(): return
                     self.app.log(f"[{i+1}/{total}] {os.path.basename(path)}")
+                    original_size = None
+                    if keep_size:
+                        try:
+                            with Image.open(path) as im:
+                                original_size = im.size
+                        except Exception as e:
+                            self.app.log(f"  ⚠ Could not read original size: {e}")
                     tmp = path + ".tmp" + os.path.splitext(path)[1]
                     ok, msg = self.enhancer.process_image(path, tmp, options['model'])
                     if ok and os.path.exists(tmp):
+                        if keep_size and original_size:
+                            try:
+                                with Image.open(tmp) as im:
+                                    if im.size != original_size:
+                                        im = im.resize(original_size, Image.LANCZOS)
+                                        im.save(tmp)
+                            except Exception as e:
+                                self.app.log(f"  ⚠ Resize-back failed: {e}")
                         os.remove(path)
                         os.rename(tmp, path)
-                        self.app.log("  ✓ Enhanced")
+                        if keep_size and original_size:
+                            self.app.log(f"  ✓ Enhanced (kept {original_size[0]}x{original_size[1]})")
+                        else:
+                            self.app.log("  ✓ Enhanced")
                     else:
                         self.app.log(f"  ✗ {msg}")
             

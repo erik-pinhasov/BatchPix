@@ -276,6 +276,7 @@ class ActionsCard(Card):
         
         # Action variables (all checked by default)
         self.var_enhance = ctk.BooleanVar(value=True)
+        self.var_enhance_keep_size = ctk.BooleanVar(value=False)
         self.var_crop = ctk.BooleanVar(value=True)
         self.var_resize = ctk.BooleanVar(value=True)
         self.var_canvas_fit = ctk.BooleanVar(value=False)
@@ -298,6 +299,7 @@ class ActionsCard(Card):
         self.model_var = ctk.StringVar(value="x4-quality")
         create_combobox(row, self.model_var, ["x4-quality", "x4-fast", "x2-quality"], width=110).pack(side='left', padx=10)
         create_label(row, "AI upscale", dim=True).pack(side='left')
+        create_checkbox(row, "Keep original size", self.var_enhance_keep_size).pack(side='left', padx=(12, 0))
 
         # 2. Smart Crop (runs before resize so we adjust size on the trimmed content)
         row = ctk.CTkFrame(self.batch_frame, fg_color="transparent")
@@ -566,6 +568,7 @@ class ActionsCard(Card):
         return {
             'mode': self.mode_var.get(),
             'enhance': False if is_spin360 else self.var_enhance.get(),
+            'enhance_keep_size': False if is_spin360 else self.var_enhance_keep_size.get(),
             'model': self.model_var.get(),
             'resize': False if is_spin360 else self.var_resize.get(),
             'custom_size': self._safe_int(self.custom_size_var, 1200),
